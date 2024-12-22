@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import { FakeHttpService } from '../../data-access/fake-http.service';
+import { Component, OnInit, signal, WritableSignal } from '@angular/core';
+import {
+  FakeHttpService,
+  randTeacher,
+} from '../../data-access/fake-http.service';
 import { TeacherStore } from '../../data-access/teacher.store';
-import { CardType } from '../../model/card.model';
 import { Teacher } from '../../model/teacher.model';
 import { CardComponent } from '../../ui/card/card.component';
 
@@ -9,22 +11,22 @@ import { CardComponent } from '../../ui/card/card.component';
   selector: 'app-teacher-card',
   template: `
     <app-card
-      [list]="teachers"
-      [type]="cardType"
-      customClass="bg-light-red"></app-card>
+      [list]="teachers()"
+      backgroundColor="background-color: rgba(250, 0, 0, 0.1);"
+      (deleteItemId)="delete($event)">
+      <img cardImage src="assets/img/teacher.png" width="200px" />
+      <button
+        addButton
+        class="rounded-sm border border-blue-500 bg-blue-300 p-2"
+        (click)="addNewItem()">
+        Add
+      </button>
+    </app-card>
   `,
-  styles: [
-    `
-      ::ng-deep .bg-light-red {
-        background-color: rgba(250, 0, 0, 0.1);
-      }
-    `,
-  ],
   imports: [CardComponent],
 })
 export class TeacherCardComponent implements OnInit {
-  teachers: Teacher[] = [];
-  cardType = CardType.TEACHER;
+  teachers: WritableSignal<Teacher[]> = signal([]);
 
   constructor(
     private http: FakeHttpService,
@@ -34,6 +36,14 @@ export class TeacherCardComponent implements OnInit {
   ngOnInit(): void {
     this.http.fetchTeachers$.subscribe((t) => this.store.addAll(t));
 
-    this.store.teachers$.subscribe((t) => (this.teachers = t));
+    this.store.teachers$.subscribe((t) => this.teachers.set(t));
+  }
+
+  addNewItem() {
+    this.store.addOne(randTeacher());
+  }
+
+  delete(id: number) {
+    this.store.deleteOne(id);
   }
 }
